@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deploy
+  namespace: rails-app
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+      tier: backend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+        tier: backend
+    spec:
+	  containers:
+	  - name: postgres
+		image: postgres:14.2
+		ports:
+		- containerPort: 5432
+		env:
+		  - name: POSTGRES_USER
+			valueFrom:
+			  secretKeyRef:
+				name: mysecret-postgres
+				key: POSTGRES_USER
+		  - name: POSTGRES_PASSWORD
+			valueFrom:
+			  secretKeyRef:
+				name: mysecret-postgres
+				key: POSTGRES_PASSWORD
+		volumeMounts:
+		- mountPath: /var/lib/postgresql/data
+		  name: drkiq-postgres
+	  volumes:
+		- name: drkiq-postgres
+		  hostPath:
+			path: /var/lib/postgresql/data
