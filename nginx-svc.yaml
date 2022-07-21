@@ -1,0 +1,14 @@
+#10
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: rails-app
+spec:
+  selector:
+    app: nginx
+    tier: webapp
+  ports:
+  - protocol: TCP
+    port: 8020
+    targetPort: 8020
