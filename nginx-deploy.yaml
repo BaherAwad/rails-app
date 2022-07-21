@@ -1,0 +1,23 @@
+#7
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+  namespace: rails-app
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+      tier: webapp
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+        tier: webapp
+    spec:
+	  containers:
+	  - name: nginx
+		image: $DOCKER_USERNAME/dockerizing-ruby-nginx:latest
+		ports:
+		- containerPort: 8020
