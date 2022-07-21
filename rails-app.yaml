@@ -145,11 +145,7 @@ spec:
   volumes:
     - name: env-file
       configMap:
-        name: env-file	
-		volumeMounts:
-    - name: env-file
-      mountPath: "/.env"
-      readOnly: true
+        name: env-file
 
 ---
 #7
