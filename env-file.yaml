@@ -1,0 +1,8 @@
+#4
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-file
+  namespace: rails-app
+data:
+	{{.env}} #the content of the .env file.
