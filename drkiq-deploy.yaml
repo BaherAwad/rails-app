@@ -1,0 +1,31 @@
+#5
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drkiq-deploy
+  namespace: rails-app
+spec:
+  selector:
+    matchLabels:
+      app: drkiq
+      tier: frontend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: drkiq
+        tier: frontend
+    spec:
+	  containers:
+	  - name: drkiq
+		image: $DOCKER_USERNAME/dockerizing-ruby-drkiq:latest
+		ports:
+		- containerPort: 8010
+		volumeMounts:
+		- name: env-file
+		  mountPath: "/.env"
+		  readOnly: true
+	  volumes:
+		- name: env-file
+		  configMap:
+			name: env-file	
