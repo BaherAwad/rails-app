@@ -1,6 +1,9 @@
 # rails-app
 Read me!
 
+The hole code in one file >> rails-app.yaml
+The Separated code in rest files.
+
 create the application on namespace "rails-app"
 
 1- Deploy postgres on a deployment.
