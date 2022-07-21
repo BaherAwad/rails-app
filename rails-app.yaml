@@ -1,0 +1,223 @@
+#1
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deploy
+  namespace: rails-app
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+      tier: backend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+        tier: backend
+    spec:
+	  containers:
+	  - name: postgres
+		image: postgres:14.2
+		ports:
+		- containerPort: 5432
+		env:
+		  - name: POSTGRES_USER
+			valueFrom:
+			  secretKeyRef:
+				name: mysecret-postgres
+				key: POSTGRES_USER
+		  - name: POSTGRES_PASSWORD
+			valueFrom:
+			  secretKeyRef:
+				name: mysecret-postgres
+				key: POSTGRES_PASSWORD
+		volumeMounts:
+		- mountPath: /var/lib/postgresql/data
+		  name: drkiq-postgres
+	  volumes:
+		- name: drkiq-postgres
+		  hostPath:
+			path: /var/lib/postgresql/data
+
+---
+#2
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret-postgres
+  namespace: rails-app
+type: Opaque
+data:
+  POSTGRES_USER: "drkiq"
+  POSTGRES_PASSWORD: "test_db_password"
+  
+---
+#3
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deploy
+  namespace: rails-app
+spec:
+  selector:
+    matchLabels:
+      app: redis
+      tier: backend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+        tier: backend
+    spec:
+	  containers:
+	  - name: redis
+		image: redis:7.0
+		ports:
+		- containerPort: 6379
+		volumeMounts:
+		- mountPath: /var/lib/redis/data
+		  name: drkiq-redis
+	  volumes:
+		- name: drkiq-redis
+		  hostPath:
+			path: /var/lib/redis/data
+		
+---
+#4
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-file
+  namespace: rails-app
+data:
+	{{.env}} #the content of the .env file.
+---
+#5
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drkiq-deploy
+  namespace: rails-app
+spec:
+  selector:
+    matchLabels:
+      app: drkiq
+      tier: frontend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: drkiq
+        tier: frontend
+    spec:
+	  containers:
+	  - name: drkiq
+		image: $DOCKER_USERNAME/dockerizing-ruby-drkiq:latest
+		ports:
+		- containerPort: 8010
+		volumeMounts:
+		- name: env-file
+		  mountPath: "/.env"
+		  readOnly: true
+	  volumes:
+		- name: env-file
+		  configMap:
+			name: env-file		
+			
+---
+#6
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidekiq
+  namespace: rails-app
+spec:
+  containers:
+  - name: sidekiq
+    image: $DOCKER_USERNAME/dockerizing-ruby-sidekiq:latest
+    command: ["/bin/sh", "-c", "bundle exec sidekiq"]
+	volumeMounts:
+	- name: env-file
+      mountPath: "/.env"
+      readOnly: true
+  volumes:
+    - name: env-file
+      configMap:
+        name: env-file	
+		volumeMounts:
+    - name: env-file
+      mountPath: "/.env"
+      readOnly: true
+
+---
+#7
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+  namespace: rails-app
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+      tier: webapp
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+        tier: webapp
+    spec:
+	  containers:
+	  - name: nginx
+		image: $DOCKER_USERNAME/dockerizing-ruby-nginx:latest
+		ports:
+		- containerPort: 8020
+
+---
+#8
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: rails-app
+spec:
+  selector:
+    app: postgres
+    tier: backend
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+---
+#9
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: rails-app
+spec:
+  selector:
+    app: redis
+    tier: backend
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+---
+#10
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: rails-app
+spec:
+  selector:
+    app: nginx
+    tier: webapp
+  ports:
+  - protocol: TCP
+    port: 8020
+    targetPort: 8020
